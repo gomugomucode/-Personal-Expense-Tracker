@@ -1,0 +1,15 @@
+
+CREATE TABLE IF NOT EXITS categories(
+    id INTEGER PRIMARY KEY,
+    name REAL UNIQUE,
+
+);
+
+CREATE TABLE IF NOT EXITS expenses(
+    id INTEGER PRIMARY KEY,
+    amount REAL,
+    description TEXT, 
+    date TEXT, 
+    category_id INTEGER,
+    FOREIGN KEY (category_id) REFERENCES categories(id),
+);

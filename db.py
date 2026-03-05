@@ -7,14 +7,21 @@ def init_db():
     cursor.execute("PRAGMA foreign_keys = ON;")
     
     # Create tables
-    cursor.execute("CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY, name TEXT UNIQUE)")
+
+    cursor.execute('''CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY,
+        name TEXT UNIQUE COLLATE NOCASE
+    )''')
+
+
     cursor.execute('''CREATE TABLE IF NOT EXISTS expenses (
-                        id INTEGER PRIMARY KEY, 
-                        amount REAL, 
-                        description TEXT, 
-                        date TEXT, 
-                        category_id INTEGER,
-                        FOREIGN KEY (category_id) REFERENCES categories(id))''')
+        id INTEGER PRIMARY KEY, 
+        amount REAL, 
+        description TEXT, 
+        date TEXT, 
+        category_id INTEGER,
+        FOREIGN KEY (category_id) REFERENCES categories(id)
+    )''')
     
     # Add some default categories
     default_cats = [('Food',), ('Transport',), ('Entertainment',), ('Rent',)]

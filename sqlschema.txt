@@ -1,9 +1,9 @@
 
-CREATE TABLE IF NOT EXITS categories(
+CREATE TABLE categories (
     id INTEGER PRIMARY KEY,
-    name REAL UNIQUE,
-
+    name TEXT UNIQUE COLLATE NOCASE
 );
+
 
 CREATE TABLE IF NOT EXITS expenses(
     id INTEGER PRIMARY KEY,

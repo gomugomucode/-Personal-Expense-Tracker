@@ -22,6 +22,11 @@ def init_db():
         category_id INTEGER,
         FOREIGN KEY (category_id) REFERENCES categories(id)
     )''')
+
+    cursor.execute('''CREATE TABLE IF NOT EXISTS budgets (
+                    category_id INTEGER PRIMARY KEY,
+                    limit_amount REAL,
+                    FOREIGN KEY (category_id) REFERENCES categories(id))''')
     
     # Add some default categories
     default_cats = [('Food',), ('Transport',), ('Entertainment',), ('Rent',)]

@@ -3,6 +3,7 @@
 
 <head>
     <title>Finance Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         table {
             border-collapse: collapse;
@@ -54,117 +55,140 @@
         button:hover {
             background-color: #218838;
         }
+
         .delete-btn {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.8em;
-}
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
 
-.delete-btn:hover {
-    background-color: #c82333;
-}
-.search-container {
-    margin-bottom: 20px;
-    background: #e9ecef;
-    padding: 15px;
-    border-radius: 8px;
-}
+        .search-container {
+            margin-bottom: 20px;
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+        }
 
-.search-container input {
-    width: 250px;
-}
+        .summary-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 5px solid #4CAF50;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
 
-.search-container a {
-    text-decoration: none;
-    color: #6c757d;
-    margin-left: 10px;
-    font-size: 0.9em;
-}
-.summary-card {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    border-left: 5px solid #4CAF50;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
-}
+        .summary-card ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
 
-.summary-card ul {
-    list-style: none;
-    padding: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-}
-
-.summary-card li {
-    background: #f8f9fa;
-    padding: 10px;
-    border-radius: 4px;
-}
+        .summary-card li {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 
 <body>
+
     <h2>Add New Expense</h2>
     <form method="POST">
         <input type="number" step="0.01" name="amount" placeholder="Amount" required>
         <input type="text" name="description" placeholder="Description" required>
-
         <select name="category">
             {% for cat in categories %}
             <option value="{{ cat }}">{{ cat }}</option>
             {% endfor %}
         </select>
-
         <button type="submit">Save Expense</button>
     </form>
 
     <div class="summary-card">
-    <h3>Spending Summary</h3>
-    <ul>
-        {% for item in summary %}
-        <li><strong>{{ item['name'] }}:</strong> ${{ "{:,.2f}". format(item['total']) }}</li>
-        {% endfor %}
-    </ul>
-    <p><strong>Grand Total: ${{ "{:,.2f}".format(grand_total) }}</strong></p>
-</div>
-    <hr>
+        <h3>Spending Summary</h3>
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+            <ul>
+                {% for item in summary %}
+                <li><strong>{{ item['name'] }}:</strong> ${{ "{:,.2f}".format(item['total']) }}</li>
+                {% endfor %}
+            </ul>
+            <div style="width: 300px; max-width: 100%;">
+                <canvas id="expenseChart"></canvas>
+            </div>
+        </div>
+        <p><strong>Grand Total: ${{ "{:,.2f}".format(grand_total) }}</strong></p>
+    </div>
+
     <div class="search-container">
-    <form action="/" method="GET">
-        <input type="text" name="q" placeholder="Search expenses..." value="{{ search_query }}">
-        <button type="submit">Search</button>
-        {% if search_query %}
-            <a href="/">Clear</a>
-        {% endif %}
-    </form>
-</div>
+        <form action="/" method="GET">
+            <input type="text" name="q" placeholder="Search expenses..." value="{{ search_query }}">
+            <button type="submit">Search</button>
+            {% if search_query %}<a href="/" style="margin-left:10px; color:#666; text-decoration:none;">Clear</a>{%
+            endif %}
+        </form>
+    </div>
+
     <h1>My Expense Report</h1>
     <table>
-    <tr>
-        <th>Date</th>
-        <th>Description</th>
-        <th>Amount</th>
-        <th>Category</th>
-        <th>Action</th> </tr>
-    {% for expense in expenses %}
-    <tr>
-        <td>{{ expense['date'] }}</td>
-        <td>{{ expense['description'] }}</td>
-        <td>${{ expense['amount'] }}</td>
-        <td>{{ expense['name'] }}</td>
-        <td>
-            <form action="{{ url_for('delete', expense_id=expense['id']) }}" method="POST" style="display:inline;">
-                <button type="submit" class="delete-btn" onclick="return confirm('Are you sure?')">Delete</button>
-            </form>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
+        <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Category</th>
+            <th>Action</th>
+        </tr>
+        {% for expense in expenses %}
+        <tr>
+            <td>{{ expense['date'] }}</td>
+            <td>{{ expense['description'] }}</td>
+            <td>${{ "{:,.2f}".format(expense['amount']) }}</td>
+            <td>{{ expense['name'] }}</td>
+            <td>
+                <form action="{{ url_for('delete', expense_id=expense['id']) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="delete-btn" onclick="return confirm('Are you sure?')">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+  <script>
+    // Only run the chart logic if we actually have data
+    const labels = {{ chart_labels | tojson }};
+    const values = {{ chart_values | tojson }};
+
+    if (labels.length > 0) {
+        const ctx = document.getElementById('expenseChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: ['#4CAF50', '#FF9800', '#2196F3', '#f44336', '#9C27B0', '#00BCD4', '#FFEB3B'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { 
+                    legend: { position: 'bottom' } 
+                }
+            }
+        });
+    } else {
+        // If no data, hide the canvas or show a message
+        document.getElementById('expenseChart').style.display = 'none';
+    }
+</script>
 </body>
 
 </html>

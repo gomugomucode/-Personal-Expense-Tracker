@@ -16,21 +16,23 @@ def get_db_connection():
 def index():
     conn = get_db_connection()
     
-    # 1. HANDLE ADDING DATA (POST)
+    # 1. Handle Form Submission (Adding Expense)
     if request.method == 'POST':
-        amount = request.form['amount']
-        description = request.form['description']
-        category = request.form['category']
-        
-        # Validation (Professional touch!)
-        if amount and description:
-            add_expense(conn, float(amount), description, category)
-            conn.close()
-            return redirect(url_for('index'))
+        try:
+            amount = request.form.get('amount')
+            description = request.form.get('description')
+            category = request.form.get('category')
+            
+            if amount and description:
+                # Use your existing add_expense logic
+                add_expense(conn, float(amount), description, category)
+                # We don't close yet; we redirect to refresh the page
+                return redirect(url_for('index'))
+        except Exception as e:
+            print(f"Error adding expense: {e}")
 
-    # 2. HANDLE SEARCHING/VIEWING DATA (GET)
+    # 2. Handle Search Query
     search_query = request.args.get('q', '')
-    
     if search_query:
         sql = '''
             SELECT e.id, e.date, e.description, e.amount, c.name 
@@ -49,7 +51,7 @@ def index():
             ORDER BY e.date DESC
         ''').fetchall()
 
-    # 3. HANDLE SUMMARY DATA
+    # 3. Handle Summary Data for Chart and Cards
     summary_sql = '''
         SELECT c.name, SUM(e.amount) as total
         FROM categories c
@@ -59,18 +61,25 @@ def index():
     '''
     summary = conn.execute(summary_sql).fetchall()
     
-    # Calculate Grand Total
-    grand_total = sum(item['total'] for item in summary if item['total'])
-        
-    categories = get_categories(conn)
-    conn.close()
+    # Prepare chart data
+    chart_labels = [row['name'] for row in summary]
+    chart_values = [row['total'] for row in summary]
+    grand_total = sum(row['total'] for row in summary if row['total'])
     
+    # Get categories for the dropdown
+    categories = get_categories(conn)
+    
+    conn.close() # Close at the very end
+
     return render_template('index.html', 
                            expenses=expenses, 
                            categories=categories, 
                            search_query=search_query,
                            summary=summary,
-                           grand_total=grand_total)
+                           grand_total=grand_total,
+                           chart_labels=chart_labels,
+                           chart_values=chart_values)  
+
    
 
 @app.route('/delete/<int:expense_id>', methods=['POST'])
